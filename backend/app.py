@@ -24,6 +24,9 @@ def load_store():
     if not STORE_PATH.exists():
         return {"alerts": {}, "summaries": []}
     with open(STORE_PATH, "r") as f:
+        if not f.read().strip():
+            return {"alerts": {}, "summaries": []}
+        f.seek(0)
         return json.load(f)
 
 
