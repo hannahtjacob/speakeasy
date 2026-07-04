@@ -56,6 +56,27 @@ def speak_alerts_command(ack, respond, command):
         respond("Use `/speak-alerts on` or `/speak-alerts off`.")
 
 
+@bolt_app.event("message")
+def handle_message_events(event, say):
+    if event.get("subtype") is not None:
+        return
+    user = event.get("user")
+    text = event.get("text", "")
+    channel = event.get("channel")
+    if not text:
+        return
+    store = load_store()
+    store.setdefault("raw_messages", [])
+    store["raw_messages"].append({
+        "user": user,
+        "channel": channel,
+        "text": text,
+        "ts": event.get("ts")
+    })
+    save_store(store)
+    print(f"New message in {channel}: {text}")
+
+
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
     return handler.handle(request)
