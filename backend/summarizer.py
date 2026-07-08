@@ -1,7 +1,7 @@
 import os
-from anthropic import Anthropic
+from groq import Groq
 
-client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 
 def summarize_message(text, channel_name=None):
@@ -22,12 +22,12 @@ Channel: {channel_name or "unknown"}
 Message: {text}
 """
 
-    response = client.messages.create(
-        model="claude-3-5-haiku-latest",
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
         max_tokens=80,
         messages=[
             {"role": "user", "content": prompt}
         ]
     )
 
-    return response.content[0].text.strip()
+    return response.choices[0].message.content.strip()

@@ -1,5 +1,5 @@
 slack_bolt
 flask
 python-dotenv
-anthropic
+groq
 flask-cors
