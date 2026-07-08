@@ -3,13 +3,14 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+load_dotenv()
+
 from flask import Flask, jsonify, request
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 
 from summarizer import summarize_message
-
-load_dotenv()
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
