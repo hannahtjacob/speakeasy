@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 
@@ -18,6 +19,7 @@ SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 bolt_app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
 
 flask_app = Flask(__name__)
+CORS(flask_app)
 handler = SlackRequestHandler(bolt_app)
 
 STORE_PATH = Path("store.json")
@@ -105,6 +107,17 @@ def slack_events():
 @flask_app.route("/health")
 def health():
     return jsonify({"ok": True})
+
+
+@flask_app.route("/api/latest-summary")
+def latest_summary():
+    store = load_store()
+    summaries = store.get("summaries", [])
+
+    if not summaries:
+        return jsonify({"summary": None})
+
+    return jsonify(summaries[-1])
 
 
 if __name__ == "__main__":
