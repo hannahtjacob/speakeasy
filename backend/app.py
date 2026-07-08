@@ -7,6 +7,8 @@ from flask import Flask, jsonify, request
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 
+from summarizer import summarize_message
+
 load_dotenv()
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
@@ -75,6 +77,23 @@ def handle_message_events(event, say):
     })
     save_store(store)
     print(f"New message in {channel}: {text}")
+
+    try:
+        summary = summarize_message(text, channel)
+    except Exception as e:
+        print("Summarization failed:", e)
+        summary = text[:120]
+
+    store = load_store()
+    store.setdefault("summaries", [])
+    store["summaries"].append({
+        "channel": channel,
+        "original_text": text,
+        "summary": summary,
+        "ts": event.get("ts")
+    })
+    save_store(store)
+    print(f"Summary: {summary}")
 
 
 @flask_app.route("/slack/events", methods=["POST"])
