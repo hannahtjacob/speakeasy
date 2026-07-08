@@ -1,7 +1,17 @@
 import os
 from groq import Groq
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+client = None
+
+
+def get_client():
+    global client
+    if client is None:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY is not set")
+        client = Groq(api_key=api_key)
+    return client
 
 
 def summarize_message(text, channel_name=None):
@@ -22,7 +32,7 @@ Channel: {channel_name or "unknown"}
 Message: {text}
 """
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model="llama-3.1-8b-instant",
         max_tokens=80,
         messages=[
