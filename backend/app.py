@@ -16,28 +16,47 @@ from summarizer import summarize_message
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
 
-bolt_app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
+bolt_app = App(
+    token=SLACK_BOT_TOKEN,
+    signing_secret=SLACK_SIGNING_SECRET,
+    token_verification_enabled=False,
+)
 
 flask_app = Flask(__name__)
 CORS(flask_app)
 handler = SlackRequestHandler(bolt_app)
 
-STORE_PATH = Path("store.json")
+STORE_PATH = Path(__file__).with_name("store.json")
+
+
+def default_store():
+    return {"alerts": {}, "raw_messages": [], "summaries": []}
 
 
 def load_store():
     if not STORE_PATH.exists():
-        return {"alerts": {}, "summaries": []}
+        return default_store()
     with open(STORE_PATH, "r") as f:
         if not f.read().strip():
-            return {"alerts": {}, "summaries": []}
+            return default_store()
         f.seek(0)
-        return json.load(f)
+        try:
+            store = json.load(f)
+        except json.JSONDecodeError:
+            return default_store()
+    store.setdefault("alerts", {})
+    store.setdefault("raw_messages", [])
+    store.setdefault("summaries", [])
+    return store
 
 
 def save_store(data):
     with open(STORE_PATH, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def alerts_enabled(store):
+    return any(alert.get("enabled") for alert in store.get("alerts", {}).values())
 
 
 @bolt_app.command("/speak-alerts")
@@ -71,7 +90,10 @@ def handle_message_events(event, say):
     if not text:
         return
     store = load_store()
-    store.setdefault("raw_messages", [])
+
+    if not alerts_enabled(store):
+        return
+
     store["raw_messages"].append({
         "user": user,
         "channel": channel,
@@ -88,7 +110,6 @@ def handle_message_events(event, say):
         summary = text[:120]
 
     store = load_store()
-    store.setdefault("summaries", [])
     store["summaries"].append({
         "channel": channel,
         "original_text": text,
