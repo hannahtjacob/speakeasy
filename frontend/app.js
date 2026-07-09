@@ -15,7 +15,12 @@ async function fetchLatestSummary() {
     if (data.summary && data.summary !== lastSummary) {
       lastSummary = data.summary;
       document.getElementById("summaryText").textContent = data.summary;
-      speak(data.summary);
+
+      if (data.priority) {
+        speak("Priority alert. " + data.summary);
+      } else {
+        speak(data.summary);
+      }
     }
   } catch (error) {
     console.error("Could not fetch latest summary:", error);

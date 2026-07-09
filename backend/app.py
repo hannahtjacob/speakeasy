@@ -13,6 +13,7 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 
 from qa import answer_question
 from summarizer import summarize_message
+from priority import is_priority_message
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
@@ -121,8 +122,11 @@ def handle_message_events(event, say):
     save_store(store)
     print(f"New message in {channel}: {text}")
 
+    priority = is_priority_message(text)
+
     try:
-        summary = summarize_message(text, channel)
+        summary = summarize_message(text, channel,priority)
+
     except Exception as e:
         print("Summarization failed:", e)
         summary = text[:120]
@@ -132,10 +136,13 @@ def handle_message_events(event, say):
         "channel": channel,
         "original_text": text,
         "summary": summary,
+        "priority": priority,
         "ts": event.get("ts")
     })
     save_store(store)
     print(f"Summary: {summary}")
+    if priority:
+        print("Priority: True")
 
 
 @flask_app.route("/slack/events", methods=["POST"])
