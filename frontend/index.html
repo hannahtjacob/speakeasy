@@ -5,23 +5,35 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main>
-    <h1>SpeakEasy</h1>
-    <p>Hands-free Slack updates for safer, more accessible communication.</p>
+  <div class="device">
+    <header>
+      <h1>SpeakEasy</h1>
+      <p class="tagline">Hands-free Slack, spoken aloud.</p>
+    </header>
 
-    <button id="startButton">Start Listening</button>
-
-    <section>
-      <h2>Latest Spoken Alert</h2>
-      <p id="summaryText">No alerts yet.</p>
+    <section class="status-row">
+      <button id="drivingModeButton" class="mode-pill">Driving Mode: ON</button>
     </section>
-    <section>
+
+    <section class="listening-row">
+      <span class="label">Listening to</span>
+      <span id="channelName" class="value">#speakeasy-demo</span>
+    </section>
+
+    <section class="alert-card">
+      <h2>Latest Alert</h2>
+      <p id="summaryText" class="alert-quote">No alerts yet.</p>
+    </section>
+
+    <button id="startButton" class="primary-button">Start Listening</button>
+
+    <section class="ask-card">
       <h2>Ask SpeakEasy</h2>
       <input id="questionInput" placeholder="What is going on in the channel?" />
-      <button id="askButton">Ask</button>
-      <p id="answerText"></p>
+      <button id="askButton" class="primary-button secondary">Ask</button>
+      <p id="answerText" class="alert-quote"></p>
     </section>
-  </main>
+  </div>
 
   <script src="app.js"></script>
 </body>

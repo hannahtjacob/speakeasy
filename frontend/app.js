@@ -1,4 +1,5 @@
 let lastSummary = "";
+let drivingModeOn = true;
 
 function speak(text) {
   const utterance = new SpeechSynthesisUtterance(text);
@@ -16,6 +17,10 @@ async function fetchLatestSummary() {
       lastSummary = data.summary;
       document.getElementById("summaryText").textContent = data.summary;
 
+      if (!drivingModeOn) {
+        return;
+      }
+
       if (data.priority) {
         speak("Priority alert. " + data.summary);
       } else {
@@ -30,6 +35,14 @@ async function fetchLatestSummary() {
 document.getElementById("startButton").addEventListener("click", () => {
   speak("SpeakEasy is now listening for Slack alerts.");
   setInterval(fetchLatestSummary, 3000);
+});
+
+const drivingModeButton = document.getElementById("drivingModeButton");
+
+drivingModeButton.addEventListener("click", () => {
+  drivingModeOn = !drivingModeOn;
+  drivingModeButton.textContent = `Driving Mode: ${drivingModeOn ? "ON" : "OFF"}`;
+  drivingModeButton.classList.toggle("off", !drivingModeOn);
 });
 
 async function askQuestion() {
