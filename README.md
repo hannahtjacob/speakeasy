@@ -1,11 +1,25 @@
 # SpeakEasy
 
-SpeakEasy is a voice-first Slack assistant for hands-free Slack alerts. The MVP lets a user turn `/speak-alerts` on or off, captures Slack messages, summarizes them with Groq, and exposes the latest summary to a small browser companion app that speaks it aloud with the Web Speech API.
+SpeakEasy is a hands-free Slack assistant that reads important messages aloud, summarizes channel activity, and answers questions by voice so users do not need to look at their screen in unsafe or inaccessible situations.
+
+## Why it matters
+
+Distracted driving and notification overload create real safety risks. SpeakEasy helps drivers, visually impaired users, people with limited mobility, and hands-busy workers stay connected without touching or reading a screen.
+
+## Features
+
+- `/speak-alerts on/off/status` Slack command, scoped per user and channel
+- Slack message listener
+- LLM-generated spoken summaries (Groq)
+- Priority alert detection with an "Urgent" spoken prefix
+- Browser-based text-to-speech companion app styled as a phone/watch companion
+- Simulated Driving Mode toggle (mutes spoken alerts when off)
+- Voice-friendly Q&A over recent Slack messages ("Ask SpeakEasy")
 
 ## Current Stack
 
 - Backend: Python, Flask, Slack Bolt
-- LLM summaries: Groq
+- LLM summaries + Q&A: Groq
 - Frontend: static HTML/CSS/JS with browser speech synthesis
 - Local tunnel: ngrok
 - Runtime store: `backend/store.json` generated locally and ignored by Git
@@ -66,18 +80,16 @@ frontend/index.html
 ## Current Status
 
 - Done: backend health endpoint
-- Done: `/speak-alerts on` and `/speak-alerts off`
+- Done: `/speak-alerts on`, `/speak-alerts off`, `/speak-alerts status`
 - Done: local JSON store helpers
-- Done: Slack message capture
-- Done: Groq summarization path
+- Done: Slack message capture, gated by per-channel alert preference
+- Done: Groq summarization path with priority detection
 - Done: companion page polling latest summary and speaking it
-- Blocked: current local Slack bot token is inactive and must be replaced or the Slack app must be restored
+- Done: "Ask SpeakEasy" voice Q&A over recent messages
+- Done: phone/watch-style companion UI with a Driving Mode toggle
 
 ## Next TODOs
 
-- Replace `backend/.env` with active Slack app credentials and a Groq key
-- Recreate or restore the Slack app if the previous app was deleted
-- Verify `/speak-alerts` and Slack event subscriptions with ngrok
-- Scope spoken alerts to enabled users/channels instead of summarizing whenever any user has alerts enabled
-- Add voice query support
-- Finalize architecture diagram, demo video, and Devpost writeup
+- Tighten `backend/priority.py` keyword list (common words like "today"/"tomorrow" currently cause false positives)
+- Resolve Slack channel IDs to human-readable names in the frontend instead of a static demo label
+- Finalize demo video and Devpost writeup
