@@ -14,7 +14,13 @@ def get_client():
     return client
 
 
-def summarize_message(text, channel_name=None):
+def summarize_message(text, channel_name=None, priority=False):
+    urgency_instruction = (
+        'This message has been flagged as high priority. Begin your summary with "Urgent:" or "Important:".'
+        if priority
+        else "This message is not flagged as high priority."
+    )
+
     prompt = f"""
 You are SpeakEasy, a voice-first Slack safety assistant.
 
@@ -24,7 +30,7 @@ The user may be driving, visually impaired, or unable to look at a screen.
 Rules:
 - Keep it under 20 words.
 - Sound natural when read aloud.
-- Mention urgency if the message seems urgent.
+- {urgency_instruction}
 - Do not include markdown.
 - Do not say "Slack message says."
 
