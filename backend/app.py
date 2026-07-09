@@ -55,29 +55,47 @@ def save_store(data):
         json.dump(data, f, indent=2)
 
 
-def alerts_enabled(store):
-    return any(alert.get("enabled") for alert in store.get("alerts", {}).values())
+def channel_has_alerts_enabled(channel_id):
+    store = load_store()
+    alerts = store.get("alerts", {})
+    return any(
+        value.get("channel_id") == channel_id and value.get("enabled")
+        for value in alerts.values()
+    )
 
 
 @bolt_app.command("/speak-alerts")
 def speak_alerts_command(ack, respond, command):
     ack()
 
-    text = command.get("text", "").strip()
+    text = command.get("text", "").strip().lower()
     user_id = command["user_id"]
+    channel_id = command["channel_id"]
+    key = f"{user_id}:{channel_id}"
+
+    store = load_store()
 
     if text == "on":
-        store = load_store()
-        store["alerts"][user_id] = {"enabled": True}
+        store["alerts"][key] = {
+            "enabled": True,
+            "user_id": user_id,
+            "channel_id": channel_id
+        }
         save_store(store)
-        respond("SpeakEasy alerts are now ON for you.")
+        respond("SpeakEasy alerts are now ON for this channel.")
     elif text == "off":
-        store = load_store()
-        store["alerts"][user_id] = {"enabled": False}
+        store["alerts"][key] = {
+            "enabled": False,
+            "user_id": user_id,
+            "channel_id": channel_id
+        }
         save_store(store)
-        respond("SpeakEasy alerts are now OFF for you.")
+        respond("SpeakEasy alerts are now OFF for this channel.")
+    elif text == "status":
+        enabled = store["alerts"].get(key, {}).get("enabled", False)
+        respond(f"SpeakEasy alerts are currently {'ON' if enabled else 'OFF'} for this channel.")
     else:
-        respond("Use `/speak-alerts on` or `/speak-alerts off`.")
+        respond("Use `/speak-alerts on`, `/speak-alerts off`, or `/speak-alerts status`.")
 
 
 @bolt_app.event("message")
@@ -89,11 +107,10 @@ def handle_message_events(event, say):
     channel = event.get("channel")
     if not text:
         return
-    store = load_store()
-
-    if not alerts_enabled(store):
+    if not channel_has_alerts_enabled(channel):
         return
 
+    store = load_store()
     store["raw_messages"].append({
         "user": user,
         "channel": channel,
