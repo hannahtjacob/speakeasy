@@ -11,6 +11,7 @@ from flask_cors import CORS
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 
+from qa import answer_question
 from summarizer import summarize_message
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
@@ -156,6 +157,33 @@ def latest_summary():
         return jsonify({"summary": None})
 
     return jsonify(summaries[-1])
+
+
+@flask_app.route("/api/ask", methods=["POST"])
+def ask_question():
+    data = request.get_json(silent=True) or {}
+    question = data.get("question", "").strip()
+
+    if not question:
+        return jsonify({"answer": "Ask a question about recent Slack activity."}), 400
+
+    store = load_store()
+    recent_messages = store.get("raw_messages", [])[-20:]
+    context = "\n".join([
+        f"{message.get('user')}: {message.get('text')}"
+        for message in recent_messages
+    ])
+
+    try:
+        answer = answer_question(question, context)
+    except Exception as e:
+        print("Question answering failed:", e)
+        if recent_messages:
+            answer = "I could not reach the assistant model, but I found recent Slack activity."
+        else:
+            answer = "I do not see any recent Slack messages yet."
+
+    return jsonify({"answer": answer})
 
 
 if __name__ == "__main__":
