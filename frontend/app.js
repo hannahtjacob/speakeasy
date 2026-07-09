@@ -26,3 +26,21 @@ document.getElementById("startButton").addEventListener("click", () => {
   speak("SpeakEasy is now listening for Slack alerts.");
   setInterval(fetchLatestSummary, 3000);
 });
+
+async function askQuestion() {
+  const question = document.getElementById("questionInput").value;
+
+  const response = await fetch("http://localhost:3000/api/ask", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ question })
+  });
+
+  const data = await response.json();
+  document.getElementById("answerText").textContent = data.answer;
+  speak(data.answer);
+}
+
+document.getElementById("askButton").addEventListener("click", askQuestion);
