@@ -39,10 +39,18 @@ document.getElementById("startButton").addEventListener("click", () => {
 
 const drivingModeButton = document.getElementById("drivingModeButton");
 
+function renderDrivingMode() {
+  drivingModeButton.innerHTML = `
+    <span class="status-dot" aria-hidden="true"></span>
+    <span>Driving mode</span>
+  `;
+  drivingModeButton.setAttribute("aria-pressed", String(drivingModeOn));
+  drivingModeButton.classList.toggle("off", !drivingModeOn);
+}
+
 drivingModeButton.addEventListener("click", () => {
   drivingModeOn = !drivingModeOn;
-  drivingModeButton.textContent = `Driving Mode: ${drivingModeOn ? "ON" : "OFF"}`;
-  drivingModeButton.classList.toggle("off", !drivingModeOn);
+  renderDrivingMode();
 });
 
 async function askQuestion() {
