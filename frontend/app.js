@@ -32,9 +32,35 @@ async function fetchLatestSummary() {
   }
 }
 
+async function fetchEnabledChannels() {
+  try {
+    const response = await fetch("http://localhost:3000/api/enabled-channels");
+    const data = await response.json();
+    const channelList = document.getElementById("channelName");
+    const channels = data.channels || [];
+
+    if (!channels.length) {
+      channelList.textContent = "No channels enabled";
+      return;
+    }
+
+    channelList.replaceChildren();
+
+    channels.forEach((channel) => {
+      const item = document.createElement("span");
+      item.className = "channel-pill";
+      item.textContent = channel.name;
+      channelList.appendChild(item);
+    });
+  } catch (error) {
+    console.error("Could not fetch enabled channels:", error);
+  }
+}
+
 document.getElementById("startButton").addEventListener("click", () => {
   speak("SpeakEasy is now listening for Slack alerts.");
   setInterval(fetchLatestSummary, 3000);
+  fetchEnabledChannels();
 });
 
 const drivingModeButton = document.getElementById("drivingModeButton");
@@ -70,3 +96,6 @@ async function askQuestion() {
 }
 
 document.getElementById("askButton").addEventListener("click", askQuestion);
+
+fetchEnabledChannels();
+setInterval(fetchEnabledChannels, 3000);
