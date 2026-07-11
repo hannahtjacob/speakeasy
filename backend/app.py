@@ -1,5 +1,8 @@
+import hashlib
+import hmac
 import json
 import os
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -66,10 +69,33 @@ def channel_has_alerts_enabled(channel_id):
     )
 
 
-@bolt_app.command("/speak-alerts")
-def speak_alerts_command(ack, respond, command):
-    ack()
+def verify_slack_signature(req):
+    timestamp = req.headers.get("X-Slack-Request-Timestamp", "")
+    signature = req.headers.get("X-Slack-Signature", "")
 
+    if not timestamp or not signature:
+        return False
+
+    try:
+        timestamp_value = int(timestamp)
+    except ValueError:
+        return False
+
+    if abs(time.time() - timestamp_value) > 60 * 5:
+        return False
+
+    body = req.get_data(as_text=True)
+    base = f"v0:{timestamp}:{body}".encode()
+    digest = hmac.new(
+        SLACK_SIGNING_SECRET.encode(),
+        base,
+        hashlib.sha256,
+    ).hexdigest()
+    expected = f"v0={digest}"
+    return hmac.compare_digest(expected, signature)
+
+
+def handle_speak_alerts_command(command):
     text = command.get("text", "").strip().lower()
     user_id = command["user_id"]
     channel_id = command["channel_id"]
@@ -81,23 +107,28 @@ def speak_alerts_command(ack, respond, command):
         store["alerts"][key] = {
             "enabled": True,
             "user_id": user_id,
-            "channel_id": channel_id
+            "channel_id": channel_id,
         }
         save_store(store)
-        respond("SpeakEasy alerts are now ON for this channel.")
+        return "SpeakEasy alerts are now ON for this channel."
     elif text == "off":
         store["alerts"][key] = {
             "enabled": False,
             "user_id": user_id,
-            "channel_id": channel_id
+            "channel_id": channel_id,
         }
         save_store(store)
-        respond("SpeakEasy alerts are now OFF for this channel.")
+        return "SpeakEasy alerts are now OFF for this channel."
     elif text == "status":
         enabled = store["alerts"].get(key, {}).get("enabled", False)
-        respond(f"SpeakEasy alerts are currently {'ON' if enabled else 'OFF'} for this channel.")
+        return f"SpeakEasy alerts are currently {'ON' if enabled else 'OFF'} for this channel."
     else:
-        respond("Use `/speak-alerts on`, `/speak-alerts off`, or `/speak-alerts status`.")
+        return "Use `/speak-alerts on`, `/speak-alerts off`, or `/speak-alerts status`."
+
+
+@bolt_app.command("/speak-alerts")
+def speak_alerts_command(ack, command):
+    ack(handle_speak_alerts_command(command))
 
 
 @bolt_app.event("message")
@@ -147,6 +178,19 @@ def handle_message_events(event, say):
 
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
+    if request.mimetype == "application/x-www-form-urlencoded":
+        request.get_data(as_text=True)
+        if not verify_slack_signature(request):
+            return jsonify({"error": "Invalid Slack signature."}), 401
+
+        if request.form.get("command") == "/speak-alerts":
+            message = handle_speak_alerts_command(request.form)
+            return jsonify({"response_type": "ephemeral", "text": message})
+
+    data = request.get_json(silent=True) or {}
+    if data.get("type") == "url_verification" and data.get("challenge"):
+        return data["challenge"], 200, {"Content-Type": "text/plain"}
+
     return handler.handle(request)
 
 
