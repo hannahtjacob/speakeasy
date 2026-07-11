@@ -69,6 +69,27 @@ def channel_has_alerts_enabled(channel_id):
     )
 
 
+def enabled_channels():
+    store = load_store()
+    channels = {}
+
+    for value in store.get("alerts", {}).values():
+        if not value.get("enabled"):
+            continue
+
+        channel_id = value.get("channel_id")
+        if not channel_id:
+            continue
+
+        channel_name = value.get("channel_name") or channel_id
+        channels[channel_id] = {
+            "id": channel_id,
+            "name": channel_name.lstrip("#"),
+        }
+
+    return sorted(channels.values(), key=lambda channel: channel["name"].lower())
+
+
 def verify_slack_signature(req):
     timestamp = req.headers.get("X-Slack-Request-Timestamp", "")
     signature = req.headers.get("X-Slack-Signature", "")
@@ -99,6 +120,7 @@ def handle_speak_alerts_command(command):
     text = command.get("text", "").strip().lower()
     user_id = command["user_id"]
     channel_id = command["channel_id"]
+    channel_name = command.get("channel_name") or channel_id
     key = f"{user_id}:{channel_id}"
 
     store = load_store()
@@ -108,6 +130,7 @@ def handle_speak_alerts_command(command):
             "enabled": True,
             "user_id": user_id,
             "channel_id": channel_id,
+            "channel_name": channel_name,
         }
         save_store(store)
         return "SpeakEasy alerts are now ON for this channel."
@@ -116,6 +139,7 @@ def handle_speak_alerts_command(command):
             "enabled": False,
             "user_id": user_id,
             "channel_id": channel_id,
+            "channel_name": channel_name,
         }
         save_store(store)
         return "SpeakEasy alerts are now OFF for this channel."
@@ -208,6 +232,11 @@ def latest_summary():
         return jsonify({"summary": None})
 
     return jsonify(summaries[-1])
+
+
+@flask_app.route("/api/enabled-channels")
+def active_channels():
+    return jsonify({"channels": enabled_channels()})
 
 
 @flask_app.route("/api/ask", methods=["POST"])

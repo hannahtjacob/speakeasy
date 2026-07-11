@@ -130,9 +130,18 @@ h2 {
   font-weight: 500;
 }
 
-.channel-name {
+.channel-list {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.channel-pill {
   color: #1d1c1d;
-  font-weight: 600;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .surface-card {
