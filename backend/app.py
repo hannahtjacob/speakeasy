@@ -13,6 +13,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
+from slack_sdk.errors import SlackApiError
 
 from qa import answer_question
 from summarizer import summarize_message
@@ -90,6 +91,42 @@ def enabled_channels():
     return sorted(channels.values(), key=lambda channel: channel["name"].lower())
 
 
+def ensure_bot_can_receive_channel_events(channel_id):
+    if channel_id.startswith("D"):
+        return " I turned alerts on, but Slack may not send DM messages unless the app is part of that conversation."
+
+    if not channel_id.startswith("C"):
+        return " I turned alerts on, but invite SpeakEasy to this private channel so Slack sends its messages."
+
+    try:
+        channel_info = bolt_app.client.conversations_info(channel=channel_id)
+        if channel_info.get("channel", {}).get("is_member"):
+            return ""
+    except SlackApiError as error:
+        if error.response.get("error") not in {"missing_scope", "not_in_channel"}:
+            return f" I turned alerts on, but I could not confirm channel access ({error.response.get('error', 'unknown_error')})."
+    except Exception as error:
+        return f" I turned alerts on, but I could not confirm channel access ({error})."
+
+    try:
+        bolt_app.client.conversations_join(channel=channel_id)
+    except SlackApiError as error:
+        slack_error = error.response.get("error", "unknown_error")
+
+        if slack_error == "already_in_channel":
+            return ""
+        if slack_error == "missing_scope":
+            return " I turned alerts on, but the Slack app needs the `channels:join` scope or a manual invite to this channel."
+        if slack_error in {"method_not_supported_for_channel_type", "not_in_channel"}:
+            return " I turned alerts on, but invite SpeakEasy to this channel so Slack sends its messages."
+
+        return f" I turned alerts on, but I could not confirm channel access ({slack_error})."
+    except Exception as error:
+        return f" I turned alerts on, but I could not confirm channel access ({error})."
+
+    return ""
+
+
 def verify_slack_signature(req):
     timestamp = req.headers.get("X-Slack-Request-Timestamp", "")
     signature = req.headers.get("X-Slack-Signature", "")
@@ -133,7 +170,8 @@ def handle_speak_alerts_command(command):
             "channel_name": channel_name,
         }
         save_store(store)
-        return "SpeakEasy alerts are now ON for this channel."
+        access_note = ensure_bot_can_receive_channel_events(channel_id)
+        return f"SpeakEasy alerts are now ON for this channel.{access_note}"
     elif text == "off":
         store["alerts"][key] = {
             "enabled": False,
