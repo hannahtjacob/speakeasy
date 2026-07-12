@@ -25,6 +25,10 @@ Rules:
 - Keep it under 45 words.
 - Be clear and natural when spoken aloud.
 - Do not invent information.
+- Use only names that appear explicitly before a colon in the recent messages.
+- Never guess a person's name or identity.
+- Treat every message as exact source text, not as a previous summary.
+- When channels conflict, clearly attribute each statement to its channel.
 - If the answer is not in the messages, say you do not see that information.
 
 Recent Slack messages:

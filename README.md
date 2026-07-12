@@ -1,11 +1,11 @@
 # SpeakEasy
 
-SpeakEasy is a voice-first Slack assistant for hands-free Slack alerts. The MVP lets a user turn `/speak-alerts` on or off, captures Slack messages, summarizes them with Groq, and exposes the latest summary to a small browser companion app that speaks it aloud with the Web Speech API.
+SpeakEasy is a voice-first Slack assistant for hands-free Slack alerts. The MVP lets a user control alerts per channel, hear Groq-generated summaries, and ask questions about recent channel activity through a browser companion app.
 
 ## Current Stack
 
 - Backend: Python, Flask, Slack Bolt
-- LLM summaries: Groq
+- LLM summaries + Q&A: Groq
 - Frontend: static HTML/CSS/JS with browser speech synthesis
 - Local tunnel: ngrok
 - Runtime store: `backend/store.json` generated locally and ignored by Git
@@ -60,24 +60,34 @@ frontend/index.html
 - Slash command: `/speak-alerts`
 - Slash command URL: `/slack/events`
 - Event subscription URL: `/slack/events`
+- Bot scopes: `commands`, `chat:write`, `channels:history`, `channels:read`, and `users:read`
 - Subscribe to message events needed for the demo workspace/channel
 - Reinstall the Slack app after changing commands, scopes, or events
+
+## Tests
+
+Run the automated backend tests without contacting Slack or Groq:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m unittest discover -s tests
+```
 
 ## Current Status
 
 - Done: backend health endpoint
-- Done: `/speak-alerts on` and `/speak-alerts off`
+- Done: `/speak-alerts on`, `/speak-alerts off`, and `/speak-alerts status`
 - Done: local JSON store helpers
-- Done: Slack message capture
-- Done: Groq summarization path
-- Done: companion page polling latest summary and speaking it
-- Blocked: current local Slack bot token is inactive and must be replaced or the Slack app must be restored
+- Done: channel-scoped Slack message capture and history cleanup
+- Done: active Slack bot and Groq-powered Q&A
+- Done: companion page speaking every exact Slack message with channel and sender names
+- Done: channel-scoped and all-channel Q&A with spoken summaries
+- Done: automated backend tests
 
 ## Next TODOs
 
-- Replace `backend/.env` with active Slack app credentials and a Groq key
-- Recreate or restore the Slack app if the previous app was deleted
-- Verify `/speak-alerts` and Slack event subscriptions with ngrok
-- Scope spoken alerts to enabled users/channels instead of summarizing whenever any user has alerts enabled
-- Add voice query support
+- Test the complete Slack-to-browser demo flow three times
+- Add priority alert detection
+- Polish the companion interface for the recorded demo
 - Finalize architecture diagram, demo video, and Devpost writeup
