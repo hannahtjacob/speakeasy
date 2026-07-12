@@ -5,7 +5,7 @@ SpeakEasy is a voice-first Slack assistant for hands-free Slack alerts. The MVP 
 ## Current Stack
 
 - Backend: Python, Flask, Slack Bolt
-- LLM summaries: Groq
+- LLM summaries + Q&A: Groq
 - Frontend: static HTML/CSS/JS with browser speech synthesis
 - Local tunnel: ngrok
 - Runtime store: `backend/store.json` generated locally and ignored by Git
