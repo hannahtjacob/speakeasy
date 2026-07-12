@@ -9,11 +9,26 @@
     <h1>SpeakEasy</h1>
     <p>Hands-free Slack updates for safer, more accessible communication.</p>
 
-    <button id="startButton">Start Listening</button>
+    <button id="startButton" aria-pressed="false">Start Listening</button>
 
     <section>
-      <h2>Latest Spoken Alert</h2>
-      <p id="summaryText">No alerts yet.</p>
+      <h2>Spoken Alerts</h2>
+      <p id="emptyAlerts">No alerts yet.</p>
+      <ul id="alertList" aria-live="polite"></ul>
+    </section>
+
+    <section>
+      <h2>Ask SpeakEasy</h2>
+      <label for="channelSelect">Channel</label>
+      <select id="channelSelect">
+        <option value="all">All channels</option>
+      </select>
+
+      <label for="questionInput">Question</label>
+      <input id="questionInput" placeholder="What is going on?" />
+
+      <button id="askButton">Ask</button>
+      <p id="answerText" aria-live="polite"></p>
     </section>
   </main>
 

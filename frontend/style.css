@@ -11,6 +11,52 @@ button {
   cursor: pointer;
 }
 
+label {
+  display: block;
+  margin: 14px 0 6px;
+}
+
+input,
+select {
+  box-sizing: border-box;
+  font-size: 16px;
+  padding: 10px;
+  width: 100%;
+}
+
+#askButton {
+  margin-top: 14px;
+}
+
 section {
   margin-top: 30px;
+}
+
+#alertList {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alertItem {
+  border: 1px solid #d5d9df;
+  border-left: 4px solid #2f6f4e;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.alertSource {
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.alertMessage {
+  font-size: 17px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
