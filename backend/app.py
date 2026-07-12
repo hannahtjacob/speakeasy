@@ -66,7 +66,16 @@ def channel_has_alerts_enabled(channel_id):
         value.get("channel_id") == channel_id and value.get("enabled")
         for value in alerts.values()
     )
-
+def ensure_bot_can_receive_channel_events(channel_id):
+    try:
+        response = bolt_app.client.conversations_info(channel=channel_id)
+        is_member = response.get("channel", {}).get("is_member", False)
+        if not is_member:
+            return " Note: I'm not currently in this channel — invite me with /invite @SpeakEasy so I can hear messages."
+        return ""
+    except Exception as e:
+        print("Could not verify channel membership:", e)
+        return ""
 
 def clear_channel_history(store, channel_id):
     store["raw_messages"] = [
