@@ -22,42 +22,28 @@
       </button>
     </header>
 
-    <main>
-      <section class="listening-row" aria-label="Listening channel">
-        <span class="channel-icon" aria-hidden="true">#</span>
-        <span class="label">Listening to</span>
-        <span id="channelName" class="channel-list">
-          <span class="channel-pill">speakeasy-demo</span>
-        </span>
-      </section>
+    <button id="startButton" aria-pressed="false">Start Listening</button>
 
-      <section class="surface-card alert-card">
-        <h2>Latest alert</h2>
-        <p id="summaryText" class="message-text">No alerts yet.</p>
-      </section>
+    <section>
+      <h2>Spoken Alerts</h2>
+      <p id="emptyAlerts">No alerts yet.</p>
+      <ul id="alertList" aria-live="polite"></ul>
+    </section>
 
-      <button id="startButton" class="primary-button">
-        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M8 5v14l11-7-11-7Z"></path>
-        </svg>
-        <span>Start listening</span>
-      </button>
+    <section>
+      <h2>Ask SpeakEasy</h2>
+      <label for="channelSelect">Channel</label>
+      <select id="channelSelect">
+        <option value="all">All channels</option>
+      </select>
 
-      <section class="ask-card">
-        <h2>Ask speakeasy</h2>
-        <div class="ask-controls">
-          <input id="questionInput" placeholder="What is going on in the channel?" />
-          <button id="askButton" class="icon-button" aria-label="Ask SpeakEasy">
-            <svg class="button-icon dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="m22 2-7 20-4-9-9-4 20-7Z"></path>
-              <path d="M22 2 11 13"></path>
-            </svg>
-          </button>
-        </div>
-        <p id="answerText" class="answer-card"></p>
-      </section>
-    </main>
-  </div>
+      <label for="questionInput">Question</label>
+      <input id="questionInput" placeholder="What is going on?" />
+
+      <button id="askButton">Ask</button>
+      <p id="answerText" aria-live="polite"></p>
+    </section>
+  </main>
 
   <script src="app.js"></script>
 </body>

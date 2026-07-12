@@ -16,8 +16,6 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk.errors import SlackApiError
 
 from qa import answer_question
-from summarizer import summarize_message
-from priority import is_priority_message
 
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
@@ -70,62 +68,60 @@ def channel_has_alerts_enabled(channel_id):
     )
 
 
-def enabled_channels():
-    store = load_store()
-    channels = {}
-
-    for value in store.get("alerts", {}).values():
-        if not value.get("enabled"):
-            continue
-
-        channel_id = value.get("channel_id")
-        if not channel_id:
-            continue
-
-        channel_name = value.get("channel_name") or channel_id
-        channels[channel_id] = {
-            "id": channel_id,
-            "name": channel_name.lstrip("#"),
-        }
-
-    return sorted(channels.values(), key=lambda channel: channel["name"].lower())
+def clear_channel_history(store, channel_id):
+    store["raw_messages"] = [
+        message for message in store["raw_messages"]
+        if message.get("channel") != channel_id
+    ]
+    store["summaries"] = [
+        summary for summary in store["summaries"]
+        if summary.get("channel") != channel_id
+    ]
 
 
-def ensure_bot_can_receive_channel_events(channel_id):
-    if channel_id.startswith("D"):
-        return " I turned alerts on, but Slack may not send DM messages unless the app is part of that conversation."
-
-    if not channel_id.startswith("C"):
-        return " I turned alerts on, but invite SpeakEasy to this private channel so Slack sends its messages."
-
+def get_channel_name(client, channel_id):
     try:
-        channel_info = bolt_app.client.conversations_info(channel=channel_id)
-        if channel_info.get("channel", {}).get("is_member"):
-            return ""
-    except SlackApiError as error:
-        if error.response.get("error") not in {"missing_scope", "not_in_channel"}:
-            return f" I turned alerts on, but I could not confirm channel access ({error.response.get('error', 'unknown_error')})."
-    except Exception as error:
-        return f" I turned alerts on, but I could not confirm channel access ({error})."
+        response = client.conversations_info(channel=channel_id)
+        return response["channel"].get("name") or channel_id
+    except Exception as e:
+        print("Could not resolve channel name:", e)
+        return channel_id
 
+
+def get_user_name(client, user_id):
     try:
-        bolt_app.client.conversations_join(channel=channel_id)
-    except SlackApiError as error:
-        slack_error = error.response.get("error", "unknown_error")
+        user = client.users_info(user=user_id)["user"]
+        profile = user.get("profile", {})
+        return (
+            profile.get("display_name")
+            or profile.get("real_name")
+            or user.get("real_name")
+            or user.get("name")
+            or "Someone"
+        )
+    except Exception as e:
+        print("Could not resolve user name:", e)
+        return "Someone"
 
-        if slack_error == "already_in_channel":
-            return ""
-        if slack_error == "missing_scope":
-            return " I turned alerts on, but the Slack app needs the `channels:join` scope or a manual invite to this channel."
-        if slack_error in {"method_not_supported_for_channel_type", "not_in_channel"}:
-            return " I turned alerts on, but invite SpeakEasy to this channel so Slack sends its messages."
 
-        return f" I turned alerts on, but I could not confirm channel access ({slack_error})."
-    except Exception as error:
-        return f" I turned alerts on, but I could not confirm channel access ({error})."
+def add_missing_user_names(messages, client):
+    resolved_names = {}
+    changed = False
+    for message in messages:
+        if message.get("user_name"):
+            continue
+        user_id = message.get("user")
+        if user_id:
+            if user_id not in resolved_names:
+                resolved_names[user_id] = get_user_name(client, user_id)
+            message["user_name"] = resolved_names[user_id]
+            changed = True
+    return changed
 
-    return ""
 
+@bolt_app.command("/speak-alerts")
+def speak_alerts_command(ack, respond, command):
+    ack()
 
 def verify_slack_signature(req):
     timestamp = req.headers.get("X-Slack-Request-Timestamp", "")
@@ -167,7 +163,7 @@ def handle_speak_alerts_command(command):
             "enabled": True,
             "user_id": user_id,
             "channel_id": channel_id,
-            "channel_name": channel_name,
+            "channel_name": channel_name
         }
         save_store(store)
         access_note = ensure_bot_can_receive_channel_events(channel_id)
@@ -177,10 +173,19 @@ def handle_speak_alerts_command(command):
             "enabled": False,
             "user_id": user_id,
             "channel_id": channel_id,
-            "channel_name": channel_name,
+            "channel_name": channel_name
         }
+        history_cleared = not any(
+            alert.get("channel_id") == channel_id and alert.get("enabled")
+            for alert in store["alerts"].values()
+        )
+        if history_cleared:
+            clear_channel_history(store, channel_id)
         save_store(store)
-        return "SpeakEasy alerts are now OFF for this channel."
+        if history_cleared:
+            respond("SpeakEasy alerts are now OFF for this channel, and its history was cleared.")
+        else:
+            respond("SpeakEasy alerts are now OFF for you in this channel.")
     elif text == "status":
         enabled = store["alerts"].get(key, {}).get("enabled", False)
         return f"SpeakEasy alerts are currently {'ON' if enabled else 'OFF'} for this channel."
@@ -194,7 +199,7 @@ def speak_alerts_command(ack, command):
 
 
 @bolt_app.event("message")
-def handle_message_events(event, say):
+def handle_message_events(event, client):
     if event.get("subtype") is not None:
         return
     user = event.get("user")
@@ -205,37 +210,20 @@ def handle_message_events(event, say):
     if not channel_has_alerts_enabled(channel):
         return
 
+    channel_name = get_channel_name(client, channel)
+    user_name = get_user_name(client, user)
+
     store = load_store()
     store["raw_messages"].append({
         "user": user,
+        "user_name": user_name,
         "channel": channel,
+        "channel_name": channel_name,
         "text": text,
         "ts": event.get("ts")
     })
     save_store(store)
-    print(f"New message in {channel}: {text}")
-
-    priority = is_priority_message(text)
-
-    try:
-        summary = summarize_message(text, channel,priority)
-
-    except Exception as e:
-        print("Summarization failed:", e)
-        summary = text[:120]
-
-    store = load_store()
-    store["summaries"].append({
-        "channel": channel,
-        "original_text": text,
-        "summary": summary,
-        "priority": priority,
-        "ts": event.get("ts")
-    })
-    save_store(store)
-    print(f"Summary: {summary}")
-    if priority:
-        print("Priority: True")
+    print(f"New message from {user_name} in #{channel_name}: {text}")
 
 
 @flask_app.route("/slack/events", methods=["POST"])
@@ -272,23 +260,81 @@ def latest_summary():
     return jsonify(summaries[-1])
 
 
-@flask_app.route("/api/enabled-channels")
-def active_channels():
-    return jsonify({"channels": enabled_channels()})
+@flask_app.route("/api/alerts")
+def alerts():
+    after = request.args.get("after", "")
+    messages = sorted(
+        load_store().get("raw_messages", []),
+        key=lambda message: message.get("ts", ""),
+    )
+    unseen = [
+        message for message in messages
+        if str(message.get("ts", "")) > after
+    ]
+    latest_ts = str(messages[-1].get("ts", "")) if messages else ""
+    return jsonify({"alerts": unseen, "latest_ts": latest_ts})
+
+
+@flask_app.route("/api/channels")
+def channels():
+    channels_by_id = {}
+    try:
+        response = bolt_app.client.conversations_list(
+            exclude_archived=True,
+            limit=200,
+            types="public_channel",
+        )
+        channels_by_id.update({
+            channel["id"]: channel["name"]
+            for channel in response.get("channels", [])
+        })
+    except Exception as e:
+        print("Could not load Slack channels:", e)
+
+    for alert in load_store().get("alerts", {}).values():
+        channel_id = alert.get("channel_id")
+        channel_name = alert.get("channel_name")
+        if channel_id and channel_name:
+            channels_by_id.setdefault(channel_id, channel_name)
+
+    channel_options = [
+        {"id": channel_id, "name": channel_name}
+        for channel_id, channel_name in sorted(
+            channels_by_id.items(), key=lambda item: item[1].lower()
+        )
+    ]
+    return jsonify({"channels": channel_options})
 
 
 @flask_app.route("/api/ask", methods=["POST"])
 def ask_question():
     data = request.get_json(silent=True) or {}
     question = data.get("question", "").strip()
+    requested_channel = (data.get("channel") or data.get("channel_id") or "").strip()
 
     if not question:
         return jsonify({"answer": "Ask a question about recent Slack activity."}), 400
+    if not requested_channel:
+        return jsonify({"answer": "Choose a Slack channel to ask about."}), 400
 
     store = load_store()
-    recent_messages = store.get("raw_messages", [])[-20:]
+    channel_key = requested_channel.removeprefix("#").lower()
+    all_messages = store.get("raw_messages", [])
+    if channel_key == "all":
+        recent_messages = all_messages[-20:]
+    else:
+        recent_messages = [
+            message for message in all_messages
+            if channel_key in {
+                str(message.get("channel", "")).lower(),
+                str(message.get("channel_name", "")).lower(),
+            }
+        ][-20:]
+    if add_missing_user_names(recent_messages, bolt_app.client):
+        save_store(store)
     context = "\n".join([
-        f"{message.get('user')}: {message.get('text')}"
+        f"#{message.get('channel_name', message.get('channel'))} - "
+        f"{message.get('user_name') or 'Someone'}: {message.get('text')}"
         for message in recent_messages
     ])
 
@@ -301,7 +347,7 @@ def ask_question():
         else:
             answer = "I do not see any recent Slack messages yet."
 
-    return jsonify({"answer": answer})
+    return jsonify({"answer": answer, "channel": requested_channel})
 
 
 if __name__ == "__main__":

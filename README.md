@@ -1,20 +1,6 @@
 # SpeakEasy
 
-SpeakEasy is a hands-free Slack assistant that reads important messages aloud, summarizes channel activity, and answers questions by voice so users do not need to look at their screen in unsafe or inaccessible situations.
-
-## Why it matters
-
-Distracted driving and notification overload create real safety risks. SpeakEasy helps drivers, visually impaired users, people with limited mobility, and hands-busy workers stay connected without touching or reading a screen.
-
-## Features
-
-- `/speak-alerts on/off/status` Slack command, scoped per user and channel
-- Slack message listener
-- LLM-generated spoken summaries (Groq)
-- Priority alert detection with an "Urgent" spoken prefix
-- Browser-based text-to-speech companion app styled as a phone/watch companion
-- Simulated Driving Mode toggle (mutes spoken alerts when off)
-- Voice-friendly Q&A over recent Slack messages ("Ask SpeakEasy")
+SpeakEasy is a voice-first Slack assistant for hands-free Slack alerts. The MVP lets a user control alerts per channel, hear Groq-generated summaries, and ask questions about recent channel activity through a browser companion app.
 
 ## Current Stack
 
@@ -74,22 +60,34 @@ frontend/index.html
 - Slash command: `/speak-alerts`
 - Slash command URL: `/slack/events`
 - Event subscription URL: `/slack/events`
+- Bot scopes: `commands`, `chat:write`, `channels:history`, `channels:read`, and `users:read`
 - Subscribe to message events needed for the demo workspace/channel
 - Reinstall the Slack app after changing commands, scopes, or events
+
+## Tests
+
+Run the automated backend tests without contacting Slack or Groq:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m unittest discover -s tests
+```
 
 ## Current Status
 
 - Done: backend health endpoint
-- Done: `/speak-alerts on`, `/speak-alerts off`, `/speak-alerts status`
+- Done: `/speak-alerts on`, `/speak-alerts off`, and `/speak-alerts status`
 - Done: local JSON store helpers
-- Done: Slack message capture, gated by per-channel alert preference
-- Done: Groq summarization path with priority detection
-- Done: companion page polling latest summary and speaking it
-- Done: "Ask SpeakEasy" voice Q&A over recent messages
-- Done: phone/watch-style companion UI with a Driving Mode toggle
+- Done: channel-scoped Slack message capture and history cleanup
+- Done: active Slack bot and Groq-powered Q&A
+- Done: companion page speaking every exact Slack message with channel and sender names
+- Done: channel-scoped and all-channel Q&A with spoken summaries
+- Done: automated backend tests
 
 ## Next TODOs
 
-- Tighten `backend/priority.py` keyword list (common words like "today"/"tomorrow" currently cause false positives)
-- Resolve Slack channel IDs to human-readable names in the frontend instead of a static demo label
-- Finalize demo video and Devpost writeup
+- Test the complete Slack-to-browser demo flow three times
+- Add priority alert detection
+- Polish the companion interface for the recorded demo
+- Finalize architecture diagram, demo video, and Devpost writeup
