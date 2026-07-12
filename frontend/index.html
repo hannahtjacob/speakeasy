@@ -1,50 +1,21 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>SpeakEasy Companion</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="device">
-    <header>
-      <div class="app-mark" aria-hidden="true">
-        <svg class="app-icon" viewBox="0 0 24 24" focusable="false">
-          <path d="M12 14c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v5c0 1.66 1.34 3 3 3Z"></path>
-          <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
-          <path d="M12 18v3"></path>
-          <path d="M8 21h8"></path>
-        </svg>
-      </div>
-      <h1>SpeakEasy</h1>
-      <button id="drivingModeButton" class="mode-button" aria-pressed="true">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span>Driving mode</span>
-      </button>
-    </header>
-
-    <button id="startButton" aria-pressed="false">Start Listening</button>
-
-    <section>
-      <h2>Spoken Alerts</h2>
-      <p id="emptyAlerts">No alerts yet.</p>
-      <ul id="alertList" aria-live="polite"></ul>
-    </section>
-
-    <section>
-      <h2>Ask SpeakEasy</h2>
+<html><head><title>SpeakEasy Companion</title><link rel="stylesheet" href="style.css"></head>
+<body><div class="device">
+  <header>
+    <div class="app-mark" aria-hidden="true"><svg class="app-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v5c0 1.66 1.34 3 3 3Z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v3M8 21h8"></path></svg></div>
+    <h1>SpeakEasy</h1>
+    <div class="mode-badge"><span class="status-dot"></span><span>Driving mode</span></div>
+  </header>
+  <main>
+    <section class="listening-row"><span class="channel-icon">#</span><span class="label">Listening to</span><span id="channelName" class="channel-list">All channels</span></section>
+    <section class="surface-card"><h2>Latest alert</h2><p id="emptyAlerts" class="message-text">No alerts yet.</p><ul id="alertList" class="alert-list" aria-live="polite"></ul></section>
+    <button id="startButton" class="primary-button" aria-pressed="false"><svg class="button-icon" viewBox="0 0 24 24"><path class="start-icon" d="M8 5v14l11-7-11-7Z"></path><path class="stop-icon" d="M7 7h10v10H7Z"></path></svg><span>Start Listening</span></button>
+    <section class="ask-card">
+      <h2>Ask speakeasy</h2>
       <label for="channelSelect">Channel</label>
-      <select id="channelSelect">
-        <option value="all">All channels</option>
-      </select>
-
-      <label for="questionInput">Question</label>
-      <input id="questionInput" placeholder="What is going on?" />
-
-      <button id="askButton">Ask</button>
-      <p id="answerText" aria-live="polite"></p>
+      <select id="channelSelect"><option value="all">All channels</option></select>
+      <div class="ask-controls"><input id="questionInput" aria-label="Question" placeholder="What is going on in the channel?"><button id="askButton" class="icon-button" aria-label="Ask SpeakEasy"><svg class="button-icon dark" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z"></path><path d="M22 2 11 13"></path></svg></button></div>
+      <p id="answerText" class="answer-card" aria-live="polite"></p>
     </section>
   </main>
-
-  <script src="app.js"></script>
-</body>
-</html>
+</div><script src="app.js"></script></body></html>
