@@ -1,6 +1,8 @@
 let lastAlertTs = "";
 let listeningInterval = null;
 
+const API_BASE = "https://speakeasy-qdvs.onrender.com";
+
 function speak(text, onFinished) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = 1;
@@ -48,7 +50,7 @@ function presentAlert(alert) {
 async function fetchAlerts(speakNewAlerts = true) {
   try {
     const query = lastAlertTs ? `?after=${encodeURIComponent(lastAlertTs)}` : "";
-    const response = await fetch(`http://localhost:3000/api/alerts${query}`);
+    const response = await fetch(`${API_BASE}/api/alerts${query}`);
     const data = await response.json();
 
     if (speakNewAlerts) {
@@ -62,7 +64,7 @@ async function fetchAlerts(speakNewAlerts = true) {
 
 async function loadChannels() {
   try {
-    const response = await fetch("http://localhost:3000/api/channels");
+    const response = await fetch(`${API_BASE}/api/channels`);
     const data = await response.json();
     const channelSelect = document.getElementById("channelSelect");
 
@@ -96,7 +98,7 @@ async function askQuestion() {
   askButton.textContent = "Answering...";
 
   try {
-    const response = await fetch("http://localhost:3000/api/ask", {
+    const response = await fetch(`${API_BASE}/api/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channel, question })
