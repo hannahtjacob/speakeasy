@@ -77,6 +77,13 @@ async function loadChannels() {
   }
 }
 
+function renderSelectedChannel() {
+  const channelSelect = document.getElementById("channelSelect");
+  const selectedOption = channelSelect.options[channelSelect.selectedIndex];
+  document.getElementById("channelName").textContent =
+    selectedOption?.value === "all" ? "All channels" : selectedOption?.textContent;
+}
+
 async function askQuestion() {
   const askButton = document.getElementById("askButton");
   if (askButton.disabled) {
@@ -129,7 +136,7 @@ document.getElementById("startButton").addEventListener("click", async (event) =
     clearInterval(listeningInterval);
     listeningInterval = null;
     window.speechSynthesis.cancel();
-    button.textContent = "Start Listening";
+    button.querySelector("span").textContent = "Start Listening";
     button.setAttribute("aria-pressed", "false");
     return;
   }
@@ -137,13 +144,14 @@ document.getElementById("startButton").addEventListener("click", async (event) =
   button.disabled = true;
   await fetchAlerts(false);
   listeningInterval = setInterval(fetchAlerts, 1000);
-  button.textContent = "Stop Listening";
+  button.querySelector("span").textContent = "Stop Listening";
   button.setAttribute("aria-pressed", "true");
   button.disabled = false;
   speak("SpeakEasy is now listening for Slack alerts.");
 });
 
 document.getElementById("askButton").addEventListener("click", askQuestion);
+document.getElementById("channelSelect").addEventListener("change", renderSelectedChannel);
 document.getElementById("questionInput").addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     askQuestion();
